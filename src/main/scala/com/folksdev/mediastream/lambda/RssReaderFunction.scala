@@ -1,40 +1,23 @@
-package com.folksdev.mediastream
+package com.folksdev.mediastream.lambda
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.ScheduledEvent
+import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.folksdev.mediastream.core.feed.RssFeedBuilder
-import com.folksdev.mediastream.core.model.{Feed, Source}
+import com.folksdev.mediastream.core.model.{Article, Feed, Source}
 import com.folksdev.mediastream.core.reader.ReaderServiceImpl
 import com.folksdev.mediastream.core.source.CsvSourceService
-import com.folksdev.mediastream.webhooks.discord.{Hook, HookConfig}
 import com.folksdev.mediastream.webhooks.discord.model.{Author, Embed, Message, UrlField}
+import com.folksdev.mediastream.webhooks.discord.{Hook, HookConfig}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-
-object Main extends App {
-
-  /*val defaultSource = Source(0, "", "", "", "http://feeds.dzone.com/java")
-
-  val sources = new CsvSourceService("Sources.csv").sources
-
-  sources.foreach(source =>
-    println(List(source.id, source.name).mkString(": "))
-  )
-
-  //val feed = RssFeedBuilder.getFeed(defaultSource)
-  val now = Instant.now().minus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.HALF_DAYS)
-  val retentionFilter: Instant => Boolean = instant => instant.isAfter(now)
-
-  val feeds = new ReaderServiceImpl(RssFeedBuilder, retentionFilter)
-    .read(sources)
-    .foreach(_.articles.foreach(a => println(a.title)))
-
-  def run(): Unit = {
+import scala.util.{Failure, Success}
+class RssReaderFunction extends RequestHandler[ScheduledEvent, Unit]{
+  override def handleRequest(input: ScheduledEvent, context: Context): Unit = {
 
     val res = io.Source.fromResource("Sources.csv")
     val sourceService = new CsvSourceService(res)
@@ -54,10 +37,14 @@ object Main extends App {
 
     val responses = Future.sequence(feeds.map(feedToMessageBuilder).map(hook.post))
 
-    val result = Await.result(responses, 1.minutes)
+    responses.onComplete {
+      case Success(_) => println("Hook called")
+      case Failure(exception) => println("Exception: " + exception.getMessage)
+    }
 
-
-    println("Hook called ")
+    val result = Await.result(responses, 3.minutes)
+    
+    println("Lamda execution completed")
     ()
   }
 
@@ -74,8 +61,4 @@ object Main extends App {
       color = 15258703,
       fields = None
     )))
-
-  run()
-
-   */
 }
