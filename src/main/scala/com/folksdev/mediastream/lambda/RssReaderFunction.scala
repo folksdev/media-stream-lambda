@@ -23,11 +23,8 @@ class RssReaderFunction extends RequestHandler[ScheduledEvent, Unit]{
     val sourceService = new CsvSourceService(res)
 
     val reader = new ReaderServiceImpl(RssFeedBuilder, (i: Instant) => i.isAfter(Instant.now().minus(1, ChronoUnit.DAYS).minus(1, ChronoUnit.HALF_DAYS)) )
-
-
+    
     val feeds = reader.read(sourceService.sources)
-
-
 
     val hook = new Hook(HookConfig(
       "https://discord.com/api/webhooks/852869626643611678/tK-7iDfZTgALYlFeaJxdC3GpF7wD9-DNMOCxhl64w534baFlZegwZOf_gJnxR3k17lS3",
@@ -43,7 +40,7 @@ class RssReaderFunction extends RequestHandler[ScheduledEvent, Unit]{
     }
 
     val result = Await.result(responses, 3.minutes)
-    
+
     println("Lamda execution completed")
     ()
   }
